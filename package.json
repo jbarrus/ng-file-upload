@@ -1,5 +1,5 @@
 {
-  "name": "ng-file-upload-mem-fix",
+  "name": "ng-file-upload-mem-leak-fix",
   "version": "6.1.4",
   "devDependencies": {
     "grunt": "^0.4.5",
