@@ -15,14 +15,14 @@
     "jshint-stylish": "^1.0.0",
     "load-grunt-tasks": "^3.1.0"
   },
-  "description": "An AngularJS directive for file upload using HTML5 with FileAPI polyfill for unsupported browsers",
+  "description": "An AngularJS directive for file upload using HTML5 with FileAPI polyfill for unsupported browsers. Fork from original, with a memory leak fix on an old version.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/danialfarid/ng-file-upload.git"
+    "url": "https://github.com/jbarrus/ng-file-upload.git"
   },
   "keywords": [
     "angularjs",
