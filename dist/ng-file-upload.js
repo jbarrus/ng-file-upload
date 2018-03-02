@@ -190,11 +190,11 @@ ngFileUpload.service('Upload', ['$http', '$q', '$timeout', function ($http, $q, 
 
   this.http = function (config) {
     config.transformRequest = config.transformRequest || function (data) {
-        if ((window.ArrayBuffer && data instanceof window.ArrayBuffer) || data instanceof Blob) {
-          return data;
-        }
-        return $http.defaults.transformRequest[0](arguments);
-      };
+      if ((window.ArrayBuffer && data instanceof window.ArrayBuffer) || data instanceof Blob) {
+        return data;
+      }
+      return $http.defaults.transformRequest[0](arguments);
+    };
     return sendHttp(config);
   };
 
@@ -323,7 +323,7 @@ ngFileUpload.service('Upload', ['$http', '$q', '$timeout', function ($http, $q, 
         var attribute = elem[0].attributes[i];
         if ((isInputTypeFile() && attribute.name !== 'type') ||
           (attribute.name !== 'type' && attribute.name !== 'class' &&
-          attribute.name !== 'id' && attribute.name !== 'style')) {
+            attribute.name !== 'id' && attribute.name !== 'style')) {
           if (attribute.value == null || attribute.value === '') {
             if (attribute.name === 'required') attribute.value = 'required';
             if (attribute.name === 'multiple') attribute.value = 'multiple';
@@ -635,7 +635,13 @@ ngFileUpload.service('Upload', ['$http', '$q', '$timeout', function ($http, $q, 
     var dragOverDelay = 1;
     var actualDragOverClass;
 
-    elem[0].addEventListener('dragover', function (evt) {
+    elem[0].addEventListener('dragover', dragOverListener, false);
+    elem[0].addEventListener('dragenter', dragEnterListener, false);
+    elem[0].addEventListener('dragleave', dragLeaveListener, false);
+    elem[0].addEventListener('drop', dropListener, false);
+    elem[0].addEventListener('paste', pasteListener, false);
+
+    function dragOverListener(evt) {
       if (elem.attr('disabled') || disabled) return;
       evt.preventDefault();
       if (stopPropagation(scope)) evt.stopPropagation();
@@ -649,38 +655,50 @@ ngFileUpload.service('Upload', ['$http', '$q', '$timeout', function ($http, $q, 
         actualDragOverClass = calculateDragOverClass(scope, attr, evt);
       }
       elem.addClass(actualDragOverClass);
-    }, false);
-    elem[0].addEventListener('dragenter', function (evt) {
+    }
+
+    function dragEnterListener(evt) {
       if (elem.attr('disabled') || disabled) return;
       evt.preventDefault();
       if (stopPropagation(scope)) evt.stopPropagation();
-    }, false);
-    elem[0].addEventListener('dragleave', function () {
+    }
+
+    function dragLeaveListener() {
       if (elem.attr('disabled') || disabled) return;
       leaveTimeout = $timeout(function () {
         elem.removeClass(actualDragOverClass);
         actualDragOverClass = null;
       }, dragOverDelay || 1);
-    }, false);
-    elem[0].addEventListener('drop', function (evt) {
+    }
+
+    function dropListener(evt) {
       if (elem.attr('disabled') || disabled) return;
       evt.preventDefault();
       if (stopPropagation(scope)) evt.stopPropagation();
       elem.removeClass(actualDragOverClass);
       actualDragOverClass = null;
       extractFiles(evt, function (files, rejFiles) {
-        updateModel($parse, $timeout, scope, ngModel, attr,
-          getAttr(attr, 'ngfChange') || getAttr(attr, 'ngfDrop'), files, rejFiles, evt);
-      }, $parse(getAttr(attr, 'ngfAllowDir'))(scope) !== false,
+          updateModel($parse, $timeout, scope, ngModel, attr,
+            getAttr(attr, 'ngfChange') || getAttr(attr, 'ngfDrop'), files, rejFiles, evt);
+        }, $parse(getAttr(attr, 'ngfAllowDir'))(scope) !== false,
         getAttr(attr, 'multiple') || $parse(getAttr(attr, 'ngfMultiple'))(scope));
-    }, false);
-    elem[0].addEventListener('paste', function (evt) {
+    }
+
+    function pasteListener(evt) {
       if (elem.attr('disabled') || disabled) return;
       extractFiles(evt, function (files, rejFiles) {
         updateModel($parse, $timeout, scope, ngModel, attr,
           getAttr(attr, 'ngfChange') || getAttr(attr, 'ngfDrop'), files, rejFiles, evt);
       }, false, getAttr(attr, 'multiple') || $parse(getAttr(attr, 'ngfMultiple'))(scope));
-    }, false);
+    }
+
+    scope.$on('$destroy', function() {
+      elem[0].removeEventListener('dragover', dragOverListener);
+      elem[0].removeEventListener('dragenter', dragEnterListener);
+      elem[0].removeEventListener('dragleave', dragLeaveListener);
+      elem[0].removeEventListener('drop', dropListener);
+      elem[0].removeEventListener('paste', pasteListener);
+    });
 
     function calculateDragOverClass(scope, attr, evt) {
       var accepted = true;
@@ -829,24 +847,24 @@ ngFileUpload.service('Upload', ['$http', '$q', '$timeout', function ($http, $q, 
 (function () {
 
   function fileToSrc(Upload, scope, $parse, attr, name, defaultName, callback) {
-      if (defaultName) {
-        callback($parse(defaultName)(scope));
-      }
-      scope.$watch(name, function (file) {
-        if (!angular.isString(file)) {
-          if (window.FileReader && ngFileUpload.validate(scope, $parse, attr, file, null)) {
-            Upload.dataUrl(file, function (url) {
-              if (callback) {
-                callback(url);
-              } else {
-                file.dataUrl = url || $parse(defaultName)(scope);
-              }
-            }, $parse(attr.ngfNoObjectUrl)(scope));
-          }
-        } else {
-          callback(file);
+    if (defaultName) {
+      callback($parse(defaultName)(scope));
+    }
+    scope.$watch(name, function (file) {
+      if (!angular.isString(file)) {
+        if (window.FileReader && ngFileUpload.validate(scope, $parse, attr, file, null)) {
+          Upload.dataUrl(file, function (url) {
+            if (callback) {
+              callback(url);
+            } else {
+              file.dataUrl = url || $parse(defaultName)(scope);
+            }
+          }, $parse(attr.ngfNoObjectUrl)(scope));
         }
-      });
+      } else {
+        callback(file);
+      }
+    });
   }
 
   /** @namespace attr.ngfSrc */
